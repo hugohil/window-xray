@@ -1,0 +1,5 @@
+# run
+
+```sh
+npx vite
+```
