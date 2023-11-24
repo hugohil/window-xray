@@ -7,6 +7,7 @@ let iw = window.innerWidth;
 let ih = window.innerHeight;
 
 const urlParams = new URLSearchParams(window.location.search);
+const mode = urlParams.get('mode');
 
 const modelSize = 500;
 
@@ -22,6 +23,33 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(iw, ih);
 document.body.appendChild(renderer.domElement);
 
+const vertexShader = `
+  varying vec3 vNormal;
+
+  void main() {
+    vNormal = normalize(normalMatrix * normal); // Transform the normal to camera space
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  varying vec3 vNormal;
+
+  void main() {
+    float intensity = pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+    gl_FragColor = vec4(0.0, 0.5, 1.0, 0.5) * intensity; // Blueish color with transparency
+  }
+`;
+
+const material = new THREE.ShaderMaterial({
+  vertexShader: vertexShader,
+  fragmentShader: fragmentShader,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+
+
 let model = null;
 
 const loader = new GLTFLoader();
@@ -32,6 +60,13 @@ loader.load(
     model = gltf.scene;
     scaleModel();
     model.position.z = -1;
+
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh && mode === 'xray') {
+        child.material = material;
+      }
+    });
+
     scene.add(model);
   },
   function ( xhr ) {
