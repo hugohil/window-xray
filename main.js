@@ -60,8 +60,22 @@ scene.add(light);
 
 console.log(camera.left, camera.right, camera.top, camera.bottom)
 
+let today = new Date();
+today.setHours(0);
+today.setMinutes(0);
+today.setSeconds(0);
+today.setMilliseconds(0);
+today = today.getTime();
+
+let internalTime = getTime();
+function getTime () {
+  return (new Date().getTime() - today) / 1000.0;
+}
+
 function animate() {
   requestAnimationFrame(animate);
+
+  let t = getTime();
 
   const screenCenterX = sw / 2;
   const windowCenterX = iw / 2;
@@ -79,10 +93,8 @@ function animate() {
   const camY = (camera.top - camera.bottom);
   const posY =(worldOffsetY * camY);
 
-  console.log(posY)
-
   if (model) model.position.set(posX, posY, model.position.z);
-  if (model) model.rotation.y += 0.01;
+  if (model) model.rotation.y = t * 0.5;
 
   renderer.render(scene, camera);
 }
