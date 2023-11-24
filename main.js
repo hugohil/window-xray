@@ -60,6 +60,7 @@ scene.add(light);
 
 console.log(camera.left, camera.right, camera.top, camera.bottom)
 
+// from https://github.com/bgstaal/multipleWindow3dScene/blob/main/main.js
 let today = new Date();
 today.setHours(0);
 today.setMinutes(0);
@@ -67,7 +68,6 @@ today.setSeconds(0);
 today.setMilliseconds(0);
 today = today.getTime();
 
-let internalTime = getTime();
 function getTime () {
   return (new Date().getTime() - today) / 1000.0;
 }
