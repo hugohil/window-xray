@@ -35,7 +35,7 @@ const vertexShader = `
   }
 `;
 
-const fragmentShader = `
+const fragmentXRAY = `
   varying vec3 vNormal;
 
   void main() {
@@ -44,14 +44,13 @@ const fragmentShader = `
   }
 `;
 
-const material = new THREE.ShaderMaterial({
+const materialXRAY = new THREE.ShaderMaterial({
   vertexShader: vertexShader,
-  fragmentShader: fragmentShader,
+  fragmentShader: fragmentXRAY,
   transparent: true,
   depthWrite: false,
   blending: THREE.AdditiveBlending
 });
-
 
 let model = null;
 
@@ -65,8 +64,12 @@ loader.load(
     model.position.z = -1;
 
     model.traverse((child) => {
-      if (child instanceof THREE.Mesh && mode === 'xray') {
-        child.material = material;
+      if (child instanceof THREE.Mesh) {
+        if (mode === 'xray') {
+          child.material = materialXRAY;
+        } else if (mode === 'wireframe') {
+          child.material.wireframe = true;
+        }
       }
     });
 
