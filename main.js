@@ -9,8 +9,26 @@ let ih = window.innerHeight;
 const urlParams = new URLSearchParams(window.location.search);
 const mode = urlParams.get('mode');
 
-const h1 = document.querySelector('#title');
-if (mode) h1.textContent = mode;
+const title = document.querySelector('#title');
+if (mode) title.textContent = mode.toUpperCase();
+
+localStorage.setItem('type', 'shiba');
+
+let currentType = localStorage.getItem('type');
+
+title.addEventListener('input', () => {
+  console.log('Content changed:', title.textContent);
+
+  if (/shiba/gmi.test(title.textContent)) {
+    model.shiba.visible = true;
+    model.dino.visible = false;
+    localStorage.setItem('type', title.textContent);
+  } else if (/dino/gmi.test(title.textContent)) {
+    model.dino.visible = true;
+    model.shiba.visible = false;
+    localStorage.setItem('type', title.textContent);
+  }
+});
 
 const modelSize = 500;
 
@@ -40,6 +58,8 @@ const fragmentXRAY = `
 
   void main() {
     float intensity = pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+    // add scane lines
+    intensity += sin(gl_FragCoord.y) * 0.2;
     gl_FragColor = vec4(0.0, 0.5, 1.0, 0.5) * intensity; // Blueish color with transparency
   }
 `;
@@ -52,44 +72,52 @@ const materialXRAY = new THREE.ShaderMaterial({
   blending: THREE.AdditiveBlending
 });
 
-let model = null;
+let model = {
+  shiba: null,
+  dino: null
+}
 
 const loader = new GLTFLoader();
-loader.load(
-  'shiba.glb', // model from zixisun02 on sketchfab
-  function ( gltf ) {
-    // gltf.scene.updateMatrixWorld();
-    model = gltf.scene;
-    scaleModel();
-    model.position.z = -1;
-
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (mode === 'xray') {
-          child.material = materialXRAY;
-        } else if (mode === 'wireframe') {
-          child.material.wireframe = true;
+function loadFile (filename, cb) {
+  loader.load(
+    filename, // models from zixisun02 on sketchfab
+    function (gltf) {
+      const mesh = gltf.scene;
+      mesh.position.z = -1;
+  
+      mesh.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          if (mode === 'xray') {
+            child.material = materialXRAY;
+          } else if (mode === 'wireframe') {
+            child.material.wireframe = true;
+          }
         }
-      }
-    });
+      });
+  
+      cb(mesh);
+    },
+    function ( xhr ) {
+      console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+    },
+    function ( error ) {
+      console.log( 'An error happened', error );
+    }
+  );
+}
 
-    scene.add(model);
-  },
-  function ( xhr ) {
-    console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
-  },
-  function ( error ) {
-    console.log( 'An error happened', error );
-  }
-);
+loadFile('shiba.glb', (mesh) => {
+  model.shiba = mesh;
+  scene.add(model.shiba);
+  scaleModel();
 
-// // set model to be a cube
-// const geometry = new THREE.BoxGeometry(1, 1, 1);
-// const color = urlParams.get('color');
-// const material = new THREE.MeshPhongMaterial({ color: color ? `#${color}` : 0x00ff00 });
-// model = new THREE.Mesh(geometry, material);
-// model.position.z = -5;
-// scene.add(model);
+});
+loadFile('dinosaur.glb', (mesh) => {
+  model.dino = mesh;
+  model.dino.visible = false;
+  scene.add(model.dino);
+  scaleModel();
+});
 
 console.log(window.screenX, window.screenY)
 console.log(sw, sh)
@@ -116,6 +144,15 @@ function getTime () {
 function animate() {
   requestAnimationFrame(animate);
 
+  currentType = localStorage.getItem('type');
+  if (currentType === 'shiba') {
+    if (model.shiba) model.shiba.visible = true;
+    if (model.dino) model.dino.visible = false;
+  } else if (currentType === 'dino') {
+    if (model.dino) model.dino.visible = true;
+    if (model.shiba) model.shiba.visible = false;
+  }
+
   let t = getTime();
 
   const windowX = window.screenX;
@@ -127,7 +164,7 @@ function animate() {
   const offsetX = screenCenterX - absWindowCenterX;
   const worldOffsetX = (offsetX / iw);
   const camX = (camera.right - camera.left);
-  const posX = worldOffsetX * camX;
+  let posX = worldOffsetX * camX;
 
   const screenCenterY = sh / 2;
   const windowCenterY = ih / 2;
@@ -135,24 +172,25 @@ function animate() {
   const offsetY = 1 - (screenCenterY - absWindowCenterY);
   const worldOffsetY = (offsetY / ih);
   const camY = (camera.top - camera.bottom);
-  const posY =(worldOffsetY * camY);
+  let posY =(worldOffsetY * camY);
 
-  if (model) model.position.set(posX, posY, model.position.z);
-  if (model) model.rotation.y = t * 0.5;
-
+  if (model[currentType]) model[currentType].position.set(posX, posY, model[currentType].position.z);
+  if (model[currentType]) model[currentType].rotation.y = t * 0.5;
 
   const elementX = (sw/2) - windowX
   const elementY = 50 - windowY
-  h1.style.left = `${elementX}px`;
-  h1.style.top = `${elementY}px`;
+  title.style.left = `${elementX}px`;
+  title.style.top = `${elementY}px`;
 
   renderer.render(scene, camera);
 }
 animate();
 
 function scaleModel() {
-  const pixelSizeInCameraUnits = (cameraWidth / iw) * modelSize;
-  model?.scale.set(pixelSizeInCameraUnits, pixelSizeInCameraUnits, pixelSizeInCameraUnits);
+  const size = (cameraWidth / iw) * modelSize;
+
+  model.shiba?.scale.set(size, size, size);
+  model.dino?.scale.set(size * 0.5, size * 0.5, size * 0.5);
 }
 
 function resize () {
@@ -175,3 +213,10 @@ function resize () {
 }
 window.addEventListener('resize', resize);
 resize();
+
+/*
+"Dinosaur" (https://skfb.ly/6YnPP) by zixisun02 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+
+
+ */
