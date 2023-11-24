@@ -9,6 +9,9 @@ let ih = window.innerHeight;
 const urlParams = new URLSearchParams(window.location.search);
 const mode = urlParams.get('mode');
 
+const h1 = document.querySelector('#title');
+if (mode) h1.textContent = mode;
+
 const modelSize = 500;
 
 const scene = new THREE.Scene();
@@ -112,9 +115,12 @@ function animate() {
 
   let t = getTime();
 
+  const windowX = window.screenX;
+  const windowY = window.screenY;
+
   const screenCenterX = sw / 2;
   const windowCenterX = iw / 2;
-  const absWindowCenterX = window.screenX + windowCenterX;
+  const absWindowCenterX = windowX + windowCenterX;
   const offsetX = screenCenterX - absWindowCenterX;
   const worldOffsetX = (offsetX / iw);
   const camX = (camera.right - camera.left);
@@ -122,7 +128,7 @@ function animate() {
 
   const screenCenterY = sh / 2;
   const windowCenterY = ih / 2;
-  const absWindowCenterY = window.screenY + windowCenterY;
+  const absWindowCenterY = windowY + windowCenterY;
   const offsetY = 1 - (screenCenterY - absWindowCenterY);
   const worldOffsetY = (offsetY / ih);
   const camY = (camera.top - camera.bottom);
@@ -130,6 +136,12 @@ function animate() {
 
   if (model) model.position.set(posX, posY, model.position.z);
   if (model) model.rotation.y = t * 0.5;
+
+
+  const elementX = (sw/2) - windowX
+  const elementY = 50 - windowY
+  h1.style.left = `${elementX}px`;
+  h1.style.top = `${elementY}px`;
 
   renderer.render(scene, camera);
 }
